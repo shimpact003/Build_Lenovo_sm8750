@@ -86,6 +86,7 @@ jobs:
       ENABLE_ADIOS: ${{ github.event.inputs.enable_Adios }}
       ENABLE_BBG: ${{ github.event.inputs.enable_bbg }}
       ENABLE_KPM: ${{ github.event.inputs.enable_kpm }}
+      ENABLE_SIGNED: ${{ github.event.inputs.enable_signed }}
       ENABLE_SUSFS: ${{ github.event.inputs.enable_susfs }}
     steps:
       - uses: actions/checkout@v5
