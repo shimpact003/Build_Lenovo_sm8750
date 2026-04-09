@@ -83,6 +83,9 @@ jobs:
       KERNEL_VERSION: ${{ github.event.inputs.kernel_version }}
       CUSTOM_KERNEL_SUFFIX: ${{ github.event.inputs.custom_kernel_suffix }}
       CUSTOM_KERNEL_TIME: ${{ github.event.inputs.custom_kernel_time }}
+      STOCK_BUILD_USER: kleaf
+      STOCK_BUILD_HOST: build-host
+      STOCK_COMPILER_INFO: Android (11368308, +pgo, +bolt, +lto, +mlgo, based on r510928) clang version 18.0.0
       ENABLE_REKERNEL: ${{ github.event.inputs.enable_ReKernel }}
       ENABLE_ADIOS: ${{ github.event.inputs.enable_Adios }}
       ENABLE_BBG: ${{ github.event.inputs.enable_bbg }}
@@ -210,6 +213,25 @@ jobs:
           echo "Current disk space:"
           df -h
           echo "Kernel version being built: ${{ env.KERNEL_VERSION }}"
+
+      - name: 🛠 Set build identity
+        working-directory: kernel_workspace/common
+        run: |
+          set -e
+          if [ -f "scripts/mkcompile_h" ]; then
+            if grep -q "LINUX_COMPILE_BY=" scripts/mkcompile_h; then
+              sed -i "s|LINUX_COMPILE_BY=.*|LINUX_COMPILE_BY=\"${{ env.STOCK_BUILD_USER }}\"|" scripts/mkcompile_h
+              sed -i "s|LINUX_COMPILE_HOST=.*|LINUX_COMPILE_HOST=\"${{ env.STOCK_BUILD_HOST }}\"|" scripts/mkcompile_h
+            fi
+            if grep -q "LINUX_COMPILER=" scripts/mkcompile_h; then
+              sed -i "s|LINUX_COMPILER=.*|LINUX_COMPILER=\"${{ env.STOCK_COMPILER_INFO }}\"|" scripts/mkcompile_h
+            fi
+          fi
+          echo "KBUILD_BUILD_USER=${{ env.STOCK_BUILD_USER }}" >> "$GITHUB_ENV"
+          echo "KBUILD_BUILD_HOST=${{ env.STOCK_BUILD_HOST }}" >> "$GITHUB_ENV"
+          echo "Using build user: ${{ env.STOCK_BUILD_USER }}"
+          echo "Using build host: ${{ env.STOCK_BUILD_HOST }}"
+          echo "Using compiler info: ${{ env.STOCK_COMPILER_INFO }}"
 
       - name: 📥 Restore ccache
         id: ccache-restore
@@ -564,6 +586,8 @@ jobs:
           echo "FAKETIME=$FAKETIME" >> $GITHUB_ENV
           SO_DIR=$(pwd)
           export PRELOAD_LIBS="$SO_DIR/libfakestat.so $SO_DIR/libfaketimeMT.so"
+          export KBUILD_BUILD_USER="${{ env.STOCK_BUILD_USER }}"
+          export KBUILD_BUILD_HOST="${{ env.STOCK_BUILD_HOST }}"
           # Create the CC (compiler) wrapper
           echo '#!/bin/bash' > cc-wrapper
           echo 'export LD_PRELOAD="'$PRELOAD_LIBS'"' >> cc-wrapper
