@@ -16,6 +16,15 @@ on:
           - 'ReSukiSU'
         default: 'KernelSU'
 
+      manager_type:
+        description: "📱Select the manager APK type:"
+        required: true
+        type: choice
+        options:
+          - 'Normal'
+          - 'Spoofed'
+        default: 'Normal'
+
       kernel_version:
         description: "📝Select the version to build:"
         required: true
@@ -104,6 +113,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       KSU_TYPE: ${{ github.event.inputs.ksu_type }}
+      MANAGER_TYPE: ${{ github.event.inputs.manager_type }}
       KERNEL_VERSION: ${{ github.event.inputs.kernel_version }}
       CUSTOM_KERNEL_SUFFIX: ${{ github.event.inputs.custom_kernel_suffix }}
       CUSTOM_KERNEL_TIME: ${{ github.event.inputs.custom_kernel_time }}
@@ -517,6 +527,8 @@ jobs:
                 GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
                 KSU_VERSION=$(git rev-list --count HEAD 2>/dev/null || echo 114514)
                 echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+                echo "KSU_REPO=tiann/KernelSU" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 echo "KernelSU commit hash: $GIT_COMMIT_HASH"
                 ;;
@@ -526,6 +538,8 @@ jobs:
                 GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
                 KSU_VERSION=$(git rev-list --count HEAD 2>/dev/null || echo 114514)
                 echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+                echo "KSU_REPO=KernelSU-Next/KernelSU-Next" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 echo "KernelSU-Next commit hash: $GIT_COMMIT_HASH"
                 ;;
@@ -534,16 +548,18 @@ jobs:
                 cd ./KernelSU
                 KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
                 echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+                echo "KSU_REPO=ReSukiSU/ReSukiSU" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 ;;
               *)
-                curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s builtin
+                curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s main
                 cd ./KernelSU
                 GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
                 echo "Current commit hash: $GIT_COMMIT_HASH"
                 export KSU_VERSION=$KSU_VERSION
                 for i in {1..3}; do
-                  KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/builtin/kernel/Makefile" |
+                  KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/Makefile" |
                     grep -m1 "KSU_VERSION_API :=" |
                     awk -F'= ' '{print $2}' |
                     tr -d '[:space:]')
@@ -551,6 +567,8 @@ jobs:
                 done
                 [ -z "$KSU_API_VERSION" ] && KSU_API_VERSION="4.1.0"
                 echo "KSU_API_VERSION=$KSU_API_VERSION" >> $GITHUB_ENV
+                echo "KSU_REPO=SukiSU-Ultra/SukiSU-Ultra" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
                 VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"
 
                 sed -i '/define get_ksu_version_full/,/endef/d' kernel/Makefile
@@ -561,7 +579,7 @@ jobs:
                   1
                   END {if (!inserted) print def}
                 ' kernel/Makefile > kernel/Makefile.tmp && mv kernel/Makefile.tmp kernel/Makefile
-                KSU_VERSION=$(expr $(git rev-list --count main) + 37185 2>/dev/null || echo 114514)
+                KSU_VERSION=$(expr $(git rev-list --count HEAD) + 37185 2>/dev/null || echo 114514)
                 echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 grep -A10 "REPO_OWNER" kernel/Makefile
@@ -581,6 +599,59 @@ jobs:
           wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/main/other_patch/apk_sign.patch -O apk_sign.patch
           patch -p2 -N -F 3 < apk_sign.patch || true
           rm -f apk_sign.patch
+
+      - name: 🔧 Resolve manager APK source
+        id: manager
+        run: |
+          WANT_SPOOF=false
+          case "${{ env.MANAGER_TYPE }}" in
+            *"Spoof"*)
+              WANT_SPOOF=true
+              ;;
+          esac
+
+          case "${{ env.KSU_TYPE }}" in
+            "SukiSU")
+              MODE="workflow"
+              REPO="${{ env.KSU_REPO }}"
+              if [ "$WANT_SPOOF" = "true" ]; then
+                ARTIFACT="Spoofed-Manager"
+              else
+                ARTIFACT="manager"
+              fi
+              ;;
+            "ReSukiSU")
+              MODE="workflow"
+              REPO="${{ env.KSU_REPO }}"
+              if [ "$WANT_SPOOF" = "true" ]; then
+                ARTIFACT="Spoofed-Manager-release"
+              else
+                ARTIFACT="Manager-release"
+              fi
+              ;;
+            "KernelSU Next")
+              MODE="workflow"
+              REPO="${{ env.KSU_REPO }}"
+              if [ "$WANT_SPOOF" = "true" ]; then
+                ARTIFACT="manager-spoofed"
+              else
+                ARTIFACT="manager"
+              fi
+              ;;
+            *)
+              MODE="workflow"
+              REPO="${{ env.KSU_REPO }}"
+              ARTIFACT="manager"
+              WANT_SPOOF=false
+              ;;
+          esac
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
+          echo "want_spoof=$WANT_SPOOF" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${{ env.KSU_COMMIT_SHA }}" >> "$GITHUB_OUTPUT"
+          echo "Resolved manager source: mode=$MODE repo=$REPO artifact=$ARTIFACT commit=${{ env.KSU_COMMIT_SHA }} spoof=$WANT_SPOOF"
 
       - name: 🔧 Set up SUSFS
         if: ${{ env.ENABLE_SUSFS == 'true' }}
@@ -900,11 +971,80 @@ jobs:
           cd kernel_workspace/common/out/arch/arm64/boot
           cp ./Image "./kernel"
 
-      - name: 📤 Upload Image
+      - name: 📦 Prepare kernel bundle
+        run: |
+          BUNDLE_DIR="${GITHUB_WORKSPACE}/kernel_workspace/upload_bundle"
+          rm -rf "$BUNDLE_DIR"
+          mkdir -p "$BUNDLE_DIR"
+          cp kernel_workspace/common/out/arch/arm64/boot/kernel "$BUNDLE_DIR/kernel"
+
+      - name: 📥 Download manager APK
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          BUNDLE_DIR="${GITHUB_WORKSPACE}/kernel_workspace/upload_bundle"
+          REPO="${{ steps.manager.outputs.repo }}"
+          MODE="${{ steps.manager.outputs.mode }}"
+          ARTIFACT="${{ steps.manager.outputs.artifact }}"
+          COMMIT_SHA="${{ steps.manager.outputs.commit_sha }}"
+
+          if [ "$MODE" = "workflow" ]; then
+            RUNS_JSON="$(curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPO}/actions/runs?head_sha=${COMMIT_SHA}&status=success&per_page=50")"
+
+            mapfile -t RUN_IDS < <(printf '%s' "$RUNS_JSON" | python3 -c "import json,sys; data=json.load(sys.stdin); [print(run['id']) for run in data.get('workflow_runs', []) if 'manager' in (run.get('name','').lower())]")
+
+            if [ "${#RUN_IDS[@]}" -eq 0 ]; then
+              echo "::error::No successful manager workflow runs found for ${REPO} at commit ${COMMIT_SHA}"
+              exit 1
+            fi
+
+            ARTIFACT_URL=""
+            for RUN_ID in "${RUN_IDS[@]}"; do
+              ARTIFACTS_JSON="$(curl -fsSL \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer $GITHUB_TOKEN" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPO}/actions/runs/${RUN_ID}/artifacts")"
+
+              ARTIFACT_URL="$(printf '%s' "$ARTIFACTS_JSON" | TARGET_ARTIFACT="$ARTIFACT" python3 -c "import json,os,sys; data=json.load(sys.stdin); target=os.environ['TARGET_ARTIFACT']; print(next((artifact['archive_download_url'] for artifact in data.get('artifacts', []) if artifact.get('name') == target), ''))")"
+              if [ -n "$ARTIFACT_URL" ]; then
+                echo "Using artifact '$ARTIFACT' from run $RUN_ID"
+                break
+              fi
+            done
+
+            if [ -z "$ARTIFACT_URL" ]; then
+              echo "::error::Artifact '${ARTIFACT}' not found in successful manager workflow runs for ${REPO} at commit ${COMMIT_SHA}"
+              exit 1
+            fi
+
+            curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$ARTIFACT_URL" -o manager_artifact.zip
+            unzip -jo manager_artifact.zip "*.apk" -d "$BUNDLE_DIR"
+            rm -f manager_artifact.zip
+          fi
+
+          APK_COUNT=$(find "$BUNDLE_DIR" -maxdepth 1 -type f -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "::error::Manager APK was not downloaded"
+            exit 1
+          fi
+          find "$BUNDLE_DIR" -maxdepth 1 -type f -printf "%f\n"
+
+      - name: 📤 Upload kernel bundle
         uses: actions/upload-artifact@v5
         with:
-         name: kernel_image
-         path: kernel_workspace/common/out/arch/arm64/boot/kernel
+         name: kernel_bundle
+         path: kernel_workspace/upload_bundle/*
 
       - name: 📦 Sign boot using AOSP test key
         if: ${{ env.ENABLE_SIGNED == 'true' }}
