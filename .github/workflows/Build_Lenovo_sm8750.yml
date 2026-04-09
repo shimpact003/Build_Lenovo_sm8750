@@ -22,6 +22,7 @@ on:
           - '6.6.56'
           - '6.6.89'
           - '6.6.102'
+          - '6.6.118'
         default: '6.6.89'
 
       custom_kernel_suffix:
@@ -108,6 +109,10 @@ jobs:
               echo "os_patch_level=2025-10" >> $GITHUB_ENV
               echo "releases=TB322FC_1.5.10.096" >> $GITHUB_ENV
               ;;
+            "6.6.118")
+              echo "os_patch_level=2026-01" >> $GITHUB_ENV
+              echo "releases=TB322FC_1.5.10.183" >> $GITHUB_ENV
+              ;;
           esac
            if [ -z "${{ env.CUSTOM_KERNEL_SUFFIX }}" ]; then
             case "${{ env.KERNEL_VERSION }}" in
@@ -119,6 +124,9 @@ jobs:
                 ;;
               "6.6.102")
                 DEFAULT_SUFFIX='-android15-8-g06bc416365ef-ab14559830-4k'
+                ;;
+              "6.6.118")
+                DEFAULT_SUFFIX='-android15-8-g350f378eb496-ab14943902-4k'
                 ;;
             esac
             echo "DEFAULT_SUFFIX=$DEFAULT_SUFFIX" >> $GITHUB_ENV
@@ -137,6 +145,9 @@ jobs:
                 ;;
               6.6.102)
                 KERNEL_TIME='Tue Dec 9 15:43:22 UTC 2025'
+                ;;
+              6.6.118)
+                KERNEL_TIME='Thu Feb 26 02:40:50 UTC 2026'
                 ;;
             esac
             echo "KERNEL_TIME=$KERNEL_TIME" >> $GITHUB_ENV
@@ -159,7 +170,12 @@ jobs:
           sudo apt update &&
           sudo apt-get install -y --no-install-recommends binutils python-is-python3 libssl-dev libelf-dev ccache p7zip-full zstd &
           echo "Cloning source repository..."
-          aria2c -s16 -x16 -k1M "https://github.com/showdo/Build_Lenovo_sm8750/releases/download/common/${{ env.os_patch_level }}.tar.gz" -o common.tar.gz && \
+          COMMON_ARCHIVE_URL="https://github.com/showdo/Build_Lenovo_sm8750/releases/download/common/${{ env.os_patch_level }}.tar.gz"
+          if [ "${{ env.KERNEL_VERSION }}" = "6.6.118" ]; then
+            COMMON_ARCHIVE_URL="https://android.googlesource.com/kernel/common/+archive/refs/tags/android15-6.6-2026-01_r1.tar.gz"
+          fi
+          echo "Source archive: $COMMON_ARCHIVE_URL"
+          aria2c -s16 -x16 -k1M "$COMMON_ARCHIVE_URL" -o common.tar.gz && \
           mkdir -p common && \
           tar -xzf common.tar.gz -C common && \
           rm -f common.tar.gz &
@@ -776,4 +792,3 @@ jobs:
         with:
           name: Re-Kernel-v${{ steps.download-rekernel.outputs.tag-name }}-6.6
           path: kernel_workspace/Re-Kernel-v${{ steps.download-rekernel.outputs.tag-name }}-6.6
-
