@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       ksu_type:
-        description: "📝Select the KSU to integrate:"
+        description: "Root solution:"
         required: true
         type: choice
         options:
@@ -17,12 +17,12 @@ on:
         default: 'KernelSU'
 
       ksu_ref:
-        description: "Branch or tag for selected root solution (blank = Action-Build default)"
+        description: "Branch/tag"
         required: false
         default: ''
 
       manager_type:
-        description: "📱Select the manager APK type:"
+        description: "Manager APK type:"
         required: true
         type: choice
         options:
@@ -31,7 +31,7 @@ on:
         default: 'Normal'
 
       kernel_version:
-        description: "📝Select the version to build:"
+        description: "Kernel version:"
         required: true
         type: choice
         options:
@@ -42,17 +42,17 @@ on:
         default: '6.6.89'
 
       custom_kernel_suffix:
-        description: "✏️ Custom kernel name (leave blank to use the stock kernel name)"
+        description: "Kernel suffix"
         required: false
         default: ''
 
       custom_kernel_time:
-        description: "⏰ Custom build time (leave blank to use the stock kernel time)"
+        description: "Build timestamp"
         required: false
         default: ''
 
       kernel_module_impl:
-        description: "🧩 Kernel module implementation"
+        description: "Kernel module implementation"
         required: true
         type: choice
         options:
@@ -74,31 +74,31 @@ on:
         type: boolean
 
       enable_bbr_ecn:
-        description: "Enable BBR + ECN support"
+        description: "Enable BBR+ECN support"
         required: false
         default: false
         type: boolean
 
       enable_unicode_bypass:
-        description: "Fix Unicode invisible-character bypass"
+        description: "Fix Unicode invisible character bypass"
         required: false
         default: false
         type: boolean
 
       enable_ReKernel:
-        description: "Enable Re-Kernel support"
+        description: "Add Re-Kernel support"
         required: false
         default: false
         type: boolean
 
       enable_Adios:
-        description: "Enable ADIOS I/O scheduler support"
+        description: "Add ADIOS I/O scheduler support"
         required: true
         default: false
         type: boolean
 
       enable_susfs:
-        description: "Enable SUSFS"
+        description: "Add SUSFS support"
         required: true
         default: false
         type: boolean
@@ -109,7 +109,7 @@ on:
         default: true
         type: boolean
       enable_susfs_dev:
-        description: "Add SUSFS-dev"
+        description: "Add SUSFS-dev support"
         required: false
         default: false
         type: boolean
