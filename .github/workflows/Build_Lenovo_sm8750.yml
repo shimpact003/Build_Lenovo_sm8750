@@ -62,13 +62,13 @@ on:
       enable_Adios:
         description: "Enable ADIOS I/O scheduler support"
         required: true
-        default: true
+        default: false
         type: boolean
 
       enable_susfs:
         description: "Enable SUSFS"
         required: true
-        default: true
+        default: false
         type: boolean
 
       enable_signed:
