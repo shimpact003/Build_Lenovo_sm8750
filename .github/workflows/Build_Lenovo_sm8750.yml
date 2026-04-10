@@ -791,27 +791,30 @@ jobs:
         if: ${{ env.ENABLE_SUSFS == 'true' || env.ENABLE_SUSFS_DEV == 'true' }}
         run: |
           cd kernel_workspace
+          USE_OPPO_KSU_SUSFS=false
+          SUSFS_REPO="https://gitlab.com/simonpunk/susfs4ksu.git"
           SUSFS_BRANCH="gki-android15-6.6"
-          if [ "${{ env.ENABLE_SUSFS_DEV }}" = "true" ]; then
-            SUSFS_BRANCH="gki-android15-6.6-dev"
+          if [ "${{ env.KSU_TYPE }}" = "KernelSU" ]; then
+            USE_OPPO_KSU_SUSFS=true
+            SUSFS_REPO="https://github.com/cctv18/susfs4oki.git"
+            SUSFS_BRANCH="oki-android15-6.6"
           fi
-          git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git susfs4ksu -b "$SUSFS_BRANCH"
+          if [ "${{ env.ENABLE_SUSFS_DEV }}" = "true" ]; then
+            if [ "$USE_OPPO_KSU_SUSFS" = "true" ]; then
+              SUSFS_BRANCH="oki-android15-6.6-dev"
+            else
+              SUSFS_BRANCH="gki-android15-6.6-dev"
+            fi
+          fi
+          git clone --depth=1 "$SUSFS_REPO" susfs4ksu -b "$SUSFS_BRANCH"
           SUSFS_DIR="${PWD}/susfs4ksu"
+          if [ "$USE_OPPO_KSU_SUSFS" = "true" ]; then
+            wget https://raw.githubusercontent.com/cctv18/oppo_oplus_realme_sm8750/main/other_patch/69_hide_stuff.patch -O ./common/69_hide_stuff.patch
+          fi
           cp "${SUSFS_DIR}/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch" ./common/
           cp "${SUSFS_DIR}/kernel_patches/fs/"* ./common/fs/
           cp "${SUSFS_DIR}/kernel_patches/include/linux/"* ./common/include/linux/
-          if [ "${{ env.KSU_TYPE }}" = "KernelSU" ]; then
-            cp "${SUSFS_DIR}/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ./KernelSU/
-            cd ./KernelSU
-            sed -i 's|kernel/Makefile|kernel/Kbuild|g' ./10_enable_susfs_for_ksu.patch
-            sed -i 's|^@@ .* format:.*|@@ -94,4 +94,13 @@|' ./10_enable_susfs_for_ksu.patch
-            sed -i 's|.*check-format:.*| ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes|' ./10_enable_susfs_for_ksu.patch
-            sed -i 's|.*clang-format --dry-run.*| ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable|' ./10_enable_susfs_for_ksu.patch
-            patch -p1 < 10_enable_susfs_for_ksu.patch || true
-            cd ../common
-          else
-            cd ./common
-          fi
+          cd ./common
           GKI_V="android15-6.6"
           fake_patched=0
           if [ "$GKI_V" = "android15-6.6" ]; then
@@ -826,10 +829,19 @@ jobs:
             fi
           fi
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
+          if [ "$USE_OPPO_KSU_SUSFS" = "true" ]; then
+            patch -p1 -N -F 3 < 69_hide_stuff.patch || true
+          fi
           if [ "$fake_patched" = 1 ] && [ "$GKI_V" = "android15-6.6" ]; then
             if grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
               sed -i -e '/unsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;/d' -e '/pagemap_entry_t \*res = NULL;/d' ./fs/proc/task_mmu.c
             fi
+          fi
+          if [ "$USE_OPPO_KSU_SUSFS" = "true" ]; then
+            cd ..
+            cp "${SUSFS_DIR}/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" ./KernelSU/
+            cd ./KernelSU
+            patch -p1 < 10_enable_susfs_for_ksu.patch || true
           fi
 
       - name: 🔧 Set gki_defconfig
@@ -845,10 +857,21 @@ jobs:
 
           if [ "${{ env.ENABLE_SUSFS }}" = 'true' ] || [ "${{ env.ENABLE_SUSFS_DEV }}" = 'true' ]; then
             echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+              echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
             echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
             echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+              echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
             echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
