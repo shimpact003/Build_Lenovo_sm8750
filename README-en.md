@@ -12,7 +12,7 @@
 
 ## 📖 Introduction
 
-This project provides an automated kernel compilation workflow based on **GitHub Actions**, supporting **Lenovo** devices equipped with the **SM8750** platform. Through highly integrated scripts, it enables one-click compilation of OKI kernels featuring **(Re)SukiSU**, **SUSFS**, **Fengchi Scheduler**, and other functionalities.
+This project provides an automated kernel compilation workflow based on **GitHub Actions**, supporting **Lenovo** devices equipped with the **SM8750** platform. Through highly integrated scripts, it enables one-click compilation of GKI kernels featuring **(Re)SukiSU**, **SUSFS**, **ADIOS IOScheduler**, and other functionalities.
 
 ### ✨ Key Features
 
@@ -91,17 +91,6 @@ When build time exceeds 8 minutes, old ccache cache will be automatically cleane
 - Try re-running the workflow
 - Clean cache and recompile
 
-#### 2. Generated Image Cannot Be Flashed
-
-**Possible Causes**:
-- Device model mismatch
-- Incorrect boot partition format
-- AVB verification not disabled
-
-**Solutions**:
-- Confirm the selected device model is correct
-- Check AnyKernel3 configuration file
-- Ensure device bootloader is unlocked
 
 ### Log Analysis
 
