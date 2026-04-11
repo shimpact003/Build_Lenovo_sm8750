@@ -12,8 +12,8 @@ on:
         options:
           - 'N/A'
           - 'KernelSU'
-          - 'KernelSU Next'
-          - 'SukiSU'
+          - 'KernelSU-Next'
+          - 'SukiSU-Ultra'
           - 'ReSukiSU'
         default: 'KernelSU'
 
@@ -621,7 +621,7 @@ jobs:
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 echo "KernelSU commit hash: $GIT_COMMIT_HASH"
                 ;;
-              "KernelSU Next")
+              "KernelSU-Next")
                 KSU_SETUP_REPO="KernelSU-Next/KernelSU-Next"
                 KSU_MANAGER_REPO="${KSU_SETUP_REPO}"
                 if [ "$SUSFS_ENABLED" = "true" ]; then
@@ -729,12 +729,12 @@ jobs:
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 grep -A10 "REPO_OWNER" kernel/Makefile || true
                 grep "KSU_VERSION_FULL" kernel/Makefile || true
-                echo "SukiSU version: ${VERSION_FULL}"
+                echo "SukiSU-Ultra version: ${VERSION_FULL}"
                 ;;
             esac
 
       - name: 🔧 Add KernelSU manager signature compatibility
-        if: ${{ env.KSU_TYPE == 'KernelSU Next' }}
+        if: ${{ env.KSU_TYPE == 'KernelSU-Next' }}
         run: |
           cd kernel_workspace/common/drivers/kernelsu
           if [ -f kernel/apk_sign.c ]; then
@@ -766,7 +766,7 @@ jobs:
           esac
 
           case "${{ env.KSU_TYPE }}" in
-            "SukiSU")
+            "SukiSU-Ultra")
               MODE="workflow"
               REPO="${{ env.KSU_MANAGER_REPO }}"
               REF="${{ env.KSU_MANAGER_REF }}"
@@ -786,7 +786,7 @@ jobs:
                 ARTIFACT="Manager-release"
               fi
               ;;
-            "KernelSU Next")
+            "KernelSU-Next")
               MODE="workflow"
               REPO="${{ env.KSU_MANAGER_REPO }}"
               REF="${{ env.KSU_MANAGER_REF }}"
