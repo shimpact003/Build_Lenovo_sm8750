@@ -10,6 +10,7 @@ on:
         required: true
         type: choice
         options:
+          - 'N/A'
           - 'KernelSU'
           - 'KernelSU Next'
           - 'SukiSU'
@@ -296,7 +297,10 @@ jobs:
 
       - name: 🛠 Set ccache dir
         run: |
-          echo "CCACHE_DIR=$HOME/.ccache_${{ env.KSU_TYPE }}_${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
+          ROOT_SOLUTION_KEY="${{ env.KSU_TYPE }}"
+          ROOT_SOLUTION_KEY="${ROOT_SOLUTION_KEY//\//-}"
+          echo "ROOT_SOLUTION_KEY=$ROOT_SOLUTION_KEY" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$HOME/.ccache_${ROOT_SOLUTION_KEY}_${{ env.KERNEL_VERSION }}" >> $GITHUB_ENV
           echo "CCACHE_MAXSIZE=10G" >> $GITHUB_ENV
           echo "Current disk space:"
           df -h
@@ -326,9 +330,9 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.KSU_TYPE }}-${{ env.KERNEL_VERSION }}-latest
+          key: ccache-${{ env.ROOT_SOLUTION_KEY }}-${{ env.KERNEL_VERSION }}-latest
           restore-keys: |
-            ccache-${{ env.KSU_TYPE }}-${{ env.KERNEL_VERSION }}-
+            ccache-${{ env.ROOT_SOLUTION_KEY }}-${{ env.KERNEL_VERSION }}-
 
       - name: 🔎 Find public ccache in releases
         id: public-ccache
@@ -588,6 +592,15 @@ jobs:
               printf '%s' "$count"
             }
             case "${{ env.KSU_TYPE }}" in
+              "N/A")
+                echo "No root solution selected. Skipping root integration."
+                echo "KSUVER=0" >> $GITHUB_ENV
+                echo "KSU_REPO=" >> $GITHUB_ENV
+                echo "KSU_MANAGER_REPO=" >> $GITHUB_ENV
+                echo "KSU_MANAGER_REF=" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=" >> $GITHUB_ENV
+                echo "ksuver=0" >> $GITHUB_OUTPUT
+                ;;
               "KernelSU")
                 KSU_SETUP_REPO="tiann/KernelSU"
                 KSU_SETUP_REF="${KSU_CUSTOM_REF:-main}"
@@ -743,6 +756,7 @@ jobs:
 
       - name: 🔧 Resolve manager APK source
         id: manager
+        if: ${{ env.KSU_TYPE != 'N/A' }}
         run: |
           WANT_SPOOF=false
           case "${{ env.MANAGER_TYPE }}" in
@@ -800,7 +814,7 @@ jobs:
           echo "Resolved manager source: mode=$MODE repo=$REPO ref=$REF artifact=$ARTIFACT commit=${{ env.KSU_COMMIT_SHA }} spoof=$WANT_SPOOF"
 
       - name: 🔧 Set up SUSFS
-        if: ${{ env.ENABLE_SUSFS == 'true' || env.ENABLE_SUSFS_DEV == 'true' }}
+        if: ${{ (env.ENABLE_SUSFS == 'true' || env.ENABLE_SUSFS_DEV == 'true') && env.KSU_TYPE != 'N/A' }}
         run: |
           cd kernel_workspace
           USE_OPPO_KSU_SUSFS=false
@@ -859,38 +873,44 @@ jobs:
       - name: 🔧 Set gki_defconfig
         run: |
           cd kernel_workspace
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-
-          if [ "${{ env.KERNEL_MODULE_IMPL }}" = 'KPN' ]; then
+          if [ "${{ env.KSU_TYPE }}" = 'N/A' ]; then
+            echo "CONFIG_KSU=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KPM=n" >> ./common/arch/arm64/configs/gki_defconfig
-          else
-            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-
-          if [ "${{ env.ENABLE_SUSFS }}" = 'true' ] || [ "${{ env.ENABLE_SUSFS_DEV }}" = 'true' ]; then
-            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
-              echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            fi
-            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
-              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            fi
-            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
-              echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-              echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            fi
-            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          else
             echo "CONFIG_KSU_SUSFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+          else
+            echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+            if [ "${{ env.KERNEL_MODULE_IMPL }}" = 'KPN' ]; then
+              echo "CONFIG_KPM=n" >> ./common/arch/arm64/configs/gki_defconfig
+            else
+              echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
+
+            if [ "${{ env.ENABLE_SUSFS }}" = 'true' ] || [ "${{ env.ENABLE_SUSFS_DEV }}" = 'true' ]; then
+              echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+              if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+                echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              fi
+              echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+                echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+                echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              fi
+              echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              if [ "${{ env.KSU_TYPE }}" = 'KernelSU' ]; then
+                echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+                echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              fi
+              echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            else
+              echo "CONFIG_KSU_SUSFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
           fi
 
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -1067,14 +1087,14 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ env.KSU_TYPE }}-${{ env.KERNEL_VERSION }}-${{ github.run_id }}
+          key: ccache-${{ env.ROOT_SOLUTION_KEY }}-${{ env.KERNEL_VERSION }}-${{ github.run_id }}
 
       - name: 🧹 Clean old ccache
         if: env.BUILD_TIME > 480
         uses: actions/github-script@v8
         env:
-          PREFIX: ccache-${{ env.KSU_TYPE }}-${{ env.KERNEL_VERSION }}
-          CURRENT_KEY: ccache-${{ env.KSU_TYPE }}-${{ env.KERNEL_VERSION }}-${{ github.run_id }}
+          PREFIX: ccache-${{ env.ROOT_SOLUTION_KEY }}-${{ env.KERNEL_VERSION }}
+          CURRENT_KEY: ccache-${{ env.ROOT_SOLUTION_KEY }}-${{ env.KERNEL_VERSION }}-${{ github.run_id }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -1120,7 +1140,7 @@ jobs:
             core.info(`Old cache cleanup completed. Deleted ${deleted} caches.`);
 
       - name: 📦 Apply kernel module implementation patch
-        if: ${{ env.KERNEL_MODULE_IMPL != 'N/A' }}
+        if: ${{ env.KERNEL_MODULE_IMPL != 'N/A' && env.KSU_TYPE != 'N/A' }}
         run: |
           echo "Applying kernel module implementation patch: ${{ env.KERNEL_MODULE_IMPL }}"
           cd kernel_workspace/common/out/arch/arm64/boot
@@ -1159,11 +1179,12 @@ jobs:
       - name: 🏷️ Set kernel artifact name
         run: |
           AOSP_KERNEL_SERIES="$(printf '%s\n' "${{ env.COMMON_AOSP_TAG }}" | sed -E 's/^(android[0-9]+-[0-9]+\.[0-9]+).*/\1/')"
+          ROOT_SOLUTION_NAME="${ROOT_SOLUTION_KEY:-${{ env.KSU_TYPE }}}"
           if [ -z "$AOSP_KERNEL_SERIES" ]; then
             echo "::error::Failed to derive kernel series from COMMON_AOSP_TAG='${{ env.COMMON_AOSP_TAG }}'"
             exit 1
           fi
-          KERNEL_BUNDLE_NAME="${{ env.KSU_TYPE }}_kernel-${AOSP_KERNEL_SERIES}"
+          KERNEL_BUNDLE_NAME="${ROOT_SOLUTION_NAME}_kernel-${AOSP_KERNEL_SERIES}"
           echo "KERNEL_BUNDLE_NAME=$KERNEL_BUNDLE_NAME" >> "$GITHUB_ENV"
           echo "Kernel artifact name: $KERNEL_BUNDLE_NAME"
 
@@ -1175,6 +1196,7 @@ jobs:
           cp kernel_workspace/common/out/arch/arm64/boot/kernel "$BUNDLE_DIR/kernel"
 
       - name: 📥 Download manager APK
+        if: ${{ env.KSU_TYPE != 'N/A' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
