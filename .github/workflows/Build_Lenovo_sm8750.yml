@@ -86,6 +86,12 @@ on:
         default: false
         type: boolean
 
+      enable_droid_spaces:
+        description: "Add DroidSpaces support"
+        required: false
+        default: false
+        type: boolean
+
       enable_ReKernel:
         description: "Add Re-Kernel support"
         required: false
@@ -135,6 +141,7 @@ jobs:
       STOCK_COMPILER_INFO: Android (11368308, +pgo, +bolt, +lto, +mlgo, based on r510928) clang version 18.0.0
       TOOLCHAIN_CACHE_ROOT: .toolchain-cache
       ENABLE_REKERNEL: ${{ github.event.inputs.enable_ReKernel }}
+      ENABLE_DROID_SPACES: ${{ github.event.inputs.enable_droid_spaces }}
       ENABLE_ADIOS: ${{ github.event.inputs.enable_Adios }}
       ENABLE_BBG: ${{ github.event.inputs.enable_bbg }}
       ENABLE_NETFILTER: ${{ github.event.inputs.enable_netfilter }}
@@ -466,6 +473,34 @@ jobs:
           else
             echo "No repository cache hit and no public cache found. Building with an empty cache."
           fi
+
+      - name: 🔧 Add DroidSpaces support
+        if: ${{ env.ENABLE_DROID_SPACES == 'true' }}
+        run: |
+          echo "🔧 Enabling DroidSpaces support..."
+          cd kernel_workspace/common
+          sed -i 's/struct sysv_sem\s*sysvsem;/\/\/ struct sysv_sem sysvsem;/g' include/linux/sched.h
+          sed -i 's/struct sysv_shm\s*sysvshm;/\/\/ struct sysv_shm sysvshm;/g' include/linux/sched.h
+          if grep -q "ANDROID_KABI_USE(1," include/linux/sched.h; then
+            echo "Matched USE(1), replacing 6,7,8"
+            sed -i -e '/ANDROID_KABI_RESERVE(6);/{N;N;s|ANDROID_KABI_RESERVE(6);\n\s*ANDROID_KABI_RESERVE(7);\n\s*ANDROID_KABI_RESERVE(8);|#ifdef CONFIG_SYSVIPC\n\tANDROID_KABI_USE(6, struct sysv_sem sysvsem);\n\t_ANDROID_KABI_REPLACE(ANDROID_KABI_RESERVE(7); ANDROID_KABI_RESERVE(8), struct sysv_shm sysvshm);\n#else\n\tANDROID_KABI_RESERVE(6);\n\tANDROID_KABI_RESERVE(7);\n\tANDROID_KABI_RESERVE(8);\n#endif|;}' include/linux/sched.h
+          elif grep -q "ANDROID_KABI_RESERVE(1);" include/linux/sched.h; then
+            echo "Matched RESERVE(1), replacing 1,2,3"
+            sed -i -e '/ANDROID_KABI_RESERVE(1);/{N;N;s|ANDROID_KABI_RESERVE(1);\n\s*ANDROID_KABI_RESERVE(2);\n\s*ANDROID_KABI_RESERVE(3);|#ifdef CONFIG_SYSVIPC\n\tANDROID_KABI_USE(1, struct sysv_sem sysvsem);\n\t_ANDROID_KABI_REPLACE(ANDROID_KABI_RESERVE(2); ANDROID_KABI_RESERVE(3), struct sysv_shm sysvshm);\n#else\n\tANDROID_KABI_RESERVE(1);\n\tANDROID_KABI_RESERVE(2);\n\tANDROID_KABI_RESERVE(3);\n#endif|;}' include/linux/sched.h
+          elif grep -q "ANDROID_KABI_RESERVE(3);" include/linux/sched.h; then
+            echo "Matched fallback, replacing 3,4,5"
+            sed -i -e '/ANDROID_KABI_RESERVE(3);/{N;N;s|ANDROID_KABI_RESERVE(3);\n\s*ANDROID_KABI_RESERVE(4);\n\s*ANDROID_KABI_RESERVE(5);|#ifdef CONFIG_SYSVIPC\n\tANDROID_KABI_USE(3, struct sysv_sem sysvsem);\n\t_ANDROID_KABI_REPLACE(ANDROID_KABI_RESERVE(4); ANDROID_KABI_RESERVE(5), struct sysv_shm sysvshm);\n#else\n\tANDROID_KABI_RESERVE(3);\n\tANDROID_KABI_RESERVE(4);\n\tANDROID_KABI_RESERVE(5);\n#endif|;}' include/linux/sched.h
+          else
+            echo "No replaceable KABI field found"
+            exit 1
+          fi
+          echo "CONFIG_SYSVIPC=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PID_NS=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_POSIX_MQUEUE=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NETFILTER_XT_TARGET_REJECT=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NETFILTER_XT_TARGET_LOG=y" >> arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NETFILTER_XT_MATCH_RECENT=y" >> arch/arm64/configs/gki_defconfig
 
       - name: 🔧 Add Re-Kernel support
         if: ${{ env.ENABLE_REKERNEL == 'true' }}
