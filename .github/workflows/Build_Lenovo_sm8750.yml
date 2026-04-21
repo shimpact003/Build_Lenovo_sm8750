@@ -163,7 +163,7 @@ jobs:
       ENABLE_SUSFS: ${{ github.event.inputs.enable_susfs }}
       # ENABLE_SIGNED: ${{ github.event.inputs.enable_signed }}
       ENABLE_SUSFS_DEV: ${{ github.event.inputs.enable_susfs_dev }}
-      ENABLE_HYMOFS: ${{ github.event.inputs.enable_hymofs}}
+      ENABLE_HYMOFS: ${{ github.event.inputs.enable_hymofs }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -612,7 +612,7 @@ jobs:
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./common/security/Kconfig
 
       - name: "⚙️ Apply HymoFS Patch | 应用 HymoFS 补丁"
-        if: ${{ env.APPLY_HYMOFS == 'On' }}
+        if: ${{ env.ENABLE_HYMOFS == 'On' }}
         run: |
           curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig ./common/arch/arm64/configs/gki_defconfig
           echo "  [*] HymoFS 代码注入完成！"
