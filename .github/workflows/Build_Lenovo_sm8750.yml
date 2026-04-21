@@ -612,7 +612,7 @@ jobs:
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./common/security/Kconfig
 
       - name: "⚙️ Apply HymoFS Patch | 应用 HymoFS 补丁"
-        if: ${{ env.ENABLE_HYMOFS == 'On' }}
+        if: ${{ env.ENABLE_HYMOFS == 'true' }}
         run: |
           curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig ./common/arch/arm64/configs/gki_defconfig
           echo "  [*] HymoFS 代码注入完成！"
