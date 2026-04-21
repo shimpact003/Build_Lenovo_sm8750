@@ -127,6 +127,12 @@ on:
         default: false
         type: boolean
 
+      enable_hymofs:
+        description: "Add Hymofs support"
+        required: false
+        default: false
+        type: boolean
+
 
 
 jobs:
@@ -157,6 +163,7 @@ jobs:
       ENABLE_SUSFS: ${{ github.event.inputs.enable_susfs }}
       # ENABLE_SIGNED: ${{ github.event.inputs.enable_signed }}
       ENABLE_SUSFS_DEV: ${{ github.event.inputs.enable_susfs_dev }}
+      ENABLE_HYMOFS: ${{ github.event.inputs.enable_hymofs}}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -604,6 +611,11 @@ jobs:
           echo "CONFIG_BBG=y" >> ./common/arch/arm64/configs/gki_defconfig
           sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./common/security/Kconfig
 
+      - name: "⚙️ Apply HymoFS Patch | 应用 HymoFS 补丁"
+        if: ${{ env.APPLY_HYMOFS == 'On' }}
+        run: |
+          curl -LSs https://raw.githubusercontent.com/Anatdx/HymoFS/main/setup.sh | bash -s defconfig ./common/arch/arm64/configs/gki_defconfig
+          echo "  [*] HymoFS 代码注入完成！"
 
       - name: ⚙️ Set ${{ env.KSU_TYPE }}
         run: |
