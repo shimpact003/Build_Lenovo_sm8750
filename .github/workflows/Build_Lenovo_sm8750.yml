@@ -300,7 +300,7 @@ jobs:
           ROOT_SOLUTION_KEY="${{ env.KSU_TYPE }}"
           ROOT_SOLUTION_KEY="${ROOT_SOLUTION_KEY//\//-}"
           echo "ROOT_SOLUTION_KEY=$ROOT_SOLUTION_KEY" >> $GITHUB_ENV
-          echo "CCACHE_KEY=ccache-ecsv2-${ROOT_SOLUTION_KEY}-${KERNEL_VERSION}" >> $GITHUB_ENV
+          echo "CCACHE_KEY=ccache-ECS-${ROOT_SOLUTION_KEY}-${KERNEL_VERSION}" >> $GITHUB_ENV
           echo "CCACHE_DIR=$HOME/.ccache_${ROOT_SOLUTION_KEY}_${KERNEL_VERSION}" >> $GITHUB_ENV
           echo "CCACHE_MAXSIZE=10G" >> $GITHUB_ENV
           echo "Current disk space:"
