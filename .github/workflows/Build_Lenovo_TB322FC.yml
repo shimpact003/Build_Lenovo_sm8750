@@ -42,7 +42,7 @@ on:
           - '1.1.10.043~1.1.11.120'
           - '1.1.11.188~1.5.10.117'
           - '1.5.10.096'
-          - '1.5.10.183~1.5.10.213'
+          - '1.5.10.183~1.5.10.229'
         default: '1.1.11.188~1.5.10.117'
 
       custom_kernel_suffix:
@@ -157,7 +157,7 @@ jobs:
               default_suffix='-android15-8-g06bc416365ef-ab14559830-4k'
               default_kernel_time='Tue Dec 9 15:43:22 UTC 2025'
               ;;
-            "1.5.10.183~1.5.10.213")
+            "1.5.10.183~1.5.10.229")
               kernel_version='6.6.118'
               default_suffix='-android15-8-g350f378eb496-ab14943902-4k'
               default_kernel_time='Thu Feb 26 02:40:50 UTC 2026'
