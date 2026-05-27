@@ -735,52 +735,8 @@ jobs:
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 ;;
               *)
-                KSU_SETUP_REPO="SukiSU-Ultra/SukiSU-Ultra"
-                KSU_SETUP_REF="${KSU_CUSTOM_REF:-main}"
-                curl -LSs "https://raw.githubusercontent.com/${KSU_SETUP_REPO}/${KSU_SETUP_REF}/kernel/setup.sh" | bash -s "$KSU_SETUP_REF"
-                cd ./KernelSU
-                GIT_COMMIT_HASH=$(git rev-parse --short HEAD)
-                echo "Current commit hash: $GIT_COMMIT_HASH"
-                KSU_VERSION_TAG="$(get_latest_release_tag "$KSU_SETUP_REPO")"
-                if [[ -z "$KSU_VERSION_TAG" || "$(printf '%s\n' "$KSU_VERSION_TAG" "3.1.7" | sort -V | head -n1)" != "3.1.7" ]]; then
-                  KSU_VERSION_TAG="3.1.7"
-                fi
-                echo "KSU_VERSION_TAG=$KSU_VERSION_TAG" >> $GITHUB_ENV
-                echo "KSU_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
-                echo "KSU_MANAGER_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
-                echo "KSU_MANAGER_REF=main" >> $GITHUB_ENV
-                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-                VERSION_FULL="v${KSU_VERSION_TAG}-${GIT_COMMIT_HASH}@${KSU_SETUP_REF}"
-                ESC_VERSION_FULL=$(printf '%s' "$VERSION_FULL" | sed 's/[&|\\/]/\\&/g')
-                ESC_KSU_VERSION_TAG=$(printf '%s' "$KSU_VERSION_TAG" | sed 's/[&|\\/]/\\&/g')
-
-                if grep -q '^KSU_VERSION_FULL := ' kernel/Makefile; then
-                  sed -i "s|^KSU_VERSION_FULL := .*|KSU_VERSION_FULL := $ESC_VERSION_FULL|" kernel/Makefile
-                else
-                  awk -v full="$VERSION_FULL" '
-                    /^REPO_OWNER :=/ && !done {
-                      print
-                      print ""
-                      print "KSU_VERSION_FULL := " full
-                      done=1
-                      next
-                    }
-                    { print }
-                  ' kernel/Makefile > kernel/Makefile.tmp && mv kernel/Makefile.tmp kernel/Makefile
-                fi
-
-                if grep -q '^KSU_VERSION_API := ' kernel/Makefile; then
-                  sed -i "s|^KSU_VERSION_API := .*|KSU_VERSION_API := $ESC_KSU_VERSION_TAG|" kernel/Makefile
-                fi
-
-                LOCAL_KSU_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 13000)
-                BASE_KSU_COUNT="$(get_commit_count "$KSU_SETUP_REPO" "$KSU_SETUP_REF" "$LOCAL_KSU_COUNT")"
-                KSU_VERSION=$(expr "$BASE_KSU_COUNT" + 37185)
-                echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-                echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
-                grep -A10 "REPO_OWNER" kernel/Makefile || true
-                grep "KSU_VERSION_FULL" kernel/Makefile || true
-                echo "SukiSU-Ultra version: ${VERSION_FULL}"
+                echo "::error::Unsupported KSU_TYPE: ${{ env.KSU_TYPE }}"
+                exit 1
                 ;;
             esac
 
@@ -817,16 +773,6 @@ jobs:
           esac
 
           case "${{ env.KSU_TYPE }}" in
-            "SukiSU-Ultra")
-              MODE="workflow"
-              REPO="${{ env.KSU_MANAGER_REPO }}"
-              REF="${{ env.KSU_MANAGER_REF }}"
-              if [ "$WANT_SPOOF" = "true" ]; then
-                ARTIFACT="Spoofed-Manager"
-              else
-                ARTIFACT="manager"
-              fi
-              ;;
             "ReSukiSU")
               MODE="workflow"
               REPO="${{ env.KSU_MANAGER_REPO }}"

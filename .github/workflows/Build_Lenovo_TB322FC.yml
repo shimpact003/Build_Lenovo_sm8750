@@ -16,7 +16,6 @@ on:
           - 'N/A'
           - 'KernelSU'
           - 'KernelSU-Next'
-          - 'SukiSU-Ultra'
           - 'ReSukiSU'
         default: 'KernelSU'
 
