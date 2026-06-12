@@ -128,9 +128,9 @@ jobs:
       ENABLE_NETFILTER: ${{ inputs.enable_netfilter }}
       ENABLE_BBR_ECN: ${{ inputs.enable_bbr_ecn }}
       ENABLE_UNICODE_BYPASS: ${{ inputs.enable_unicode_bypass }}
-      ENABLE_SUSFS: ${{ inputs.enable_susfs }}
+      ENABLE_SUSFS: ${{ inputs.enable_susfs && inputs.ksu_type != 'YukiSU' }}
       # ENABLE_SIGNED: ${{ inputs.enable_signed }}
-      ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev }}
+      ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev && inputs.ksu_type != 'YukiSU'}}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -721,6 +721,21 @@ jobs:
                 ;;
               "ReSukiSU")
                 KSU_SETUP_REPO="ReSukiSU/ReSukiSU"
+                KSU_SETUP_REF="${KSU_CUSTOM_REF:-main}"
+                curl -LSs "https://raw.githubusercontent.com/${KSU_SETUP_REPO}/${KSU_SETUP_REF}/kernel/setup.sh" | bash -s "$KSU_SETUP_REF"
+                cd ./KernelSU
+                LOCAL_KSU_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 13000)
+                BASE_KSU_COUNT="$(get_commit_count "$KSU_SETUP_REPO" "$KSU_SETUP_REF" "$LOCAL_KSU_COUNT")"
+                KSU_VERSION=$(expr "$BASE_KSU_COUNT" + 30700)
+                echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+                echo "KSU_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
+                echo "KSU_MANAGER_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
+                echo "KSU_MANAGER_REF=main" >> $GITHUB_ENV
+                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+                echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+                ;;
+              "YukiSU")
+                KSU_SETUP_REPO="Anatdx/YukiSU"
                 KSU_SETUP_REF="${KSU_CUSTOM_REF:-main}"
                 curl -LSs "https://raw.githubusercontent.com/${KSU_SETUP_REPO}/${KSU_SETUP_REF}/kernel/setup.sh" | bash -s "$KSU_SETUP_REF"
                 cd ./KernelSU
