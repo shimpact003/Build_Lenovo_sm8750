@@ -812,7 +812,7 @@ jobs:
               MODE="workflow"
               REPO="${{ env.KSU_MANAGER_REPO }}"
               REF="${{ env.KSU_MANAGER_REF }}"
-              ARTIFACT="Manager"
+              ARTIFACT="Manager-arm64-v8a"
               WANT_SPOOF=false
               ;;
             *)
