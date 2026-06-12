@@ -17,6 +17,7 @@ on:
           - 'KernelSU'
           - 'KernelSU-Next'
           - 'ReSukiSU'
+          - 'YukiSU'
         default: 'KernelSU'
 
       ksu_ref:
@@ -196,6 +197,6 @@ jobs:
       enable_ntsync: ${{ inputs.enable_ntsync }}
       enable_ReKernel: ${{ inputs.enable_ReKernel }}
       enable_Adios: ${{ inputs.enable_Adios }}
-      enable_susfs: ${{ inputs.enable_susfs }}
-      enable_susfs_dev: ${{ inputs.enable_susfs_dev }}
+      enable_susfs: ${{ inputs.enable_susfs && inputs.ksu_type != 'YukiSU' }}
+      enable_susfs_dev: ${{ inputs.enable_susfs_dev && inputs.ksu_type != 'YukiSU' }}
     secrets: inherit
