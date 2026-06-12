@@ -813,6 +813,7 @@ jobs:
               REPO="${{ env.KSU_MANAGER_REPO }}"
               REF="${{ env.KSU_MANAGER_REF }}"
               ARTIFACT="Manager"
+              WANT_SPOOF=false
               ;;
             *)
               MODE="workflow"
