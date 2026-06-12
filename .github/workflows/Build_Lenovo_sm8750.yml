@@ -808,6 +808,12 @@ jobs:
                 ARTIFACT="manager"
               fi
               ;;
+            "YukiSU")
+              MODE="workflow"
+              REPO="${{ env.KSU_MANAGER_REPO }}"
+              REF="${{ env.KSU_MANAGER_REF }}"
+              ARTIFACT="Manager"
+              ;;
             *)
               MODE="workflow"
               REPO="${{ env.KSU_MANAGER_REPO }}"
