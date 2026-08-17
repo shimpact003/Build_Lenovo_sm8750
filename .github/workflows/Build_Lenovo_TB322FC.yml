@@ -125,8 +125,8 @@ on:
         default: false
         type: boolean
 
-      enable_zeromount:
-        description: "Add zeromount vfs"
+      enable_nomount:
+        description: "Add nomount vfs"
         required: false
         default: false
         type: boolean
@@ -205,5 +205,5 @@ jobs:
       enable_Adios: ${{ inputs.enable_Adios }}
       enable_susfs: ${{ inputs.enable_susfs }}
       enable_susfs_dev: ${{ inputs.enable_susfs_dev }}
-      enable_zeromount: ${{ inputs.enable_zeromount }}
+      enable_nomount: ${{ inputs.enable_zeromount }}
     secrets: inherit
