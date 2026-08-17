@@ -1211,8 +1211,6 @@ jobs:
           rm -rf "$BUNDLE_DIR"
           mkdir -p "$BUNDLE_DIR"
           cp kernel_workspace/common/out/arch/arm64/boot/kernel "$BUNDLE_DIR/kernel"
-          cp kernel_workspace/common/
-
       - name: 📥 Download manager APK
         if: ${{ env.KSU_TYPE != 'N/A' }}
         env:
