@@ -125,6 +125,12 @@ on:
         default: false
         type: boolean
 
+      enable_zeromount:
+        description: "Add zeromount vfs"
+        required: false
+        default: false
+        type: boolean
+
 jobs:
   resolve_release:
     name: Resolve TB322FC release
@@ -199,4 +205,5 @@ jobs:
       enable_Adios: ${{ inputs.enable_Adios }}
       enable_susfs: ${{ inputs.enable_susfs }}
       enable_susfs_dev: ${{ inputs.enable_susfs_dev }}
+      enable_zeromount: ${{ inputs.enable_zeromount }}
     secrets: inherit
