@@ -884,7 +884,7 @@ jobs:
       - name: 🔧 Set up zeromount
         if: ${{ (env.ENABLE_ZEROMOUNT == 'true' ) && env.KSU_TYPE != 'N/A' && env.KSU_TYPE != 'YukiSU' && env.KSU_TYPE != 'KernelSU'}}
         run: |
-          KERNEL_VERSION = ${{env.KERNEL_VERSION}}
+          KERNEL_VERSION=${{env.KERNEL_VERSION}}
           cd kernel_workspace
           git clone --depth=1 https://github.com/Enginex0/Super-Builders
           cd common
