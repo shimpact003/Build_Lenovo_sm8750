@@ -98,7 +98,7 @@ on:
         type: boolean
         default: false
 
-      enable_zeromount:
+      enable_nomount:
         required: false
         type: boolean
         default: false
@@ -134,7 +134,7 @@ jobs:
       ENABLE_SUSFS: ${{ inputs.enable_susfs }}
       # ENABLE_SIGNED: ${{ inputs.enable_signed }}
       ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev }}
-      ENABLE_ZEROMOUNT: ${{ inputs.enable_zeromount && (inputs.enable_susfs || inputs.enable_susfs_dev)}}
+      ENABLE_NOMOUNT: ${{ inputs.enable_nomount}}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -881,17 +881,10 @@ jobs:
             patch -p1 < 10_enable_susfs_for_ksu.patch || true
           fi
 
-      - name: 🔧 Set up zeromount
-        if: ${{ (env.ENABLE_ZEROMOUNT == 'true' ) && env.KSU_TYPE != 'N/A' && env.KSU_TYPE != 'YukiSU' && env.KSU_TYPE != 'KernelSU'}}
+      - name: 🔧 Set up nomount
+        if: ${{ (env.ENABLE_NOMOUNT == 'true' )}}
         run: |
-          KERNEL_VERSION=${{env.KERNEL_VERSION}}
-          cd kernel_workspace
-          git clone --depth=1 https://github.com/Enginex0/Super-Builders
-          cd common
-          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/51_*
-          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/70_*
-          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/60_*
-          bash ../Super-Builders/android15-6.6/build-helpers/fix-susfs-compat.sh . ${KERNEL_VERSION##*.} android15 ${KERNEL_VERSION%.*} /dev/null
+          curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -s experimental/hookless
       - name: 🔧 Set gki_defconfig
         run: |
           cd kernel_workspace
