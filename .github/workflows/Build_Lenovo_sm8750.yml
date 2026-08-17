@@ -888,7 +888,9 @@ jobs:
           cd kernel_workspace
           git clone --depth=1 https://github.com/Enginex0/Super-Builders
           cd common
-          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/{51_*,60_*,70_*}
+          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/51_*
+          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/70_*
+          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/60_*
           bash ../Super-Builders/android15-6.6/build-helpers/fix-susfs-compat.sh . ${KERNEL_VERSION##*.} android15 ${KERNEL_VERSION%.*} /dev/null
       - name: 🔧 Set gki_defconfig
         run: |
