@@ -98,7 +98,10 @@ on:
         type: boolean
         default: false
 
-
+      enable_zeromount:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -131,6 +134,7 @@ jobs:
       ENABLE_SUSFS: ${{ inputs.enable_susfs }}
       # ENABLE_SIGNED: ${{ inputs.enable_signed }}
       ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev }}
+      ENABLE_ZEROMOUNT: ${{ inputs.enable_zeromount && (inputs.enable_susfs || inputs.enable_susfs_dev)}}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -735,19 +739,7 @@ jobs:
                 echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
                 ;;
               "YukiSU")
-                KSU_SETUP_REPO="Anatdx/YukiSU"
-                KSU_SETUP_REF="${KSU_CUSTOM_REF:-main}"
-                curl -LSs "https://raw.githubusercontent.com/${KSU_SETUP_REPO}/${KSU_SETUP_REF}/kernel/setup.sh" | bash -s "$KSU_SETUP_REF"
-                cd ./KernelSU
-                LOCAL_KSU_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 13000)
-                BASE_KSU_COUNT="$(get_commit_count "$KSU_SETUP_REPO" "$KSU_SETUP_REF" "$LOCAL_KSU_COUNT")"
-                KSU_VERSION=$(expr "$BASE_KSU_COUNT" + 30700)
-                echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-                echo "KSU_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
-                echo "KSU_MANAGER_REPO=${KSU_SETUP_REPO}" >> $GITHUB_ENV
-                echo "KSU_MANAGER_REF=main" >> $GITHUB_ENV
-                echo "KSU_COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-                echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+                echo "::info::YukiSU only supports lkm. Building module later instead"
                 ;;
               *)
                 echo "::error::Unsupported KSU_TYPE: ${{ env.KSU_TYPE }}"
@@ -889,6 +881,15 @@ jobs:
             patch -p1 < 10_enable_susfs_for_ksu.patch || true
           fi
 
+      - name: 🔧 Set up zeromount
+        if: ${{ (env.ENABLE_ZEROMOUNT == 'true' ) && env.KSU_TYPE != 'N/A' && env.KSU_TYPE != 'YukiSU' && env.KSU_TYPE != 'KernelSU'}}
+        run: |
+          KERNEL_VERSION = ${{env.KERNEL_VERSION}}
+          cd kernel_workspace
+          git clone --depth=1 https://github.com/Enginex0/Super-Builders
+          cd common
+          patch -p1 < ../Super-Builders/android15-6.6/${{env.KSU_TYPE}}/patches/{51_*,60_*,70_*}
+          bash ../Super-Builders/android15-6.6/build-helpers/fix-susfs-compat.sh . ${KERNEL_VERSION##*.} android15 ${KERNEL_VERSION%.*} /dev/null
       - name: 🔧 Set gki_defconfig
         run: |
           cd kernel_workspace
@@ -1214,6 +1215,7 @@ jobs:
           rm -rf "$BUNDLE_DIR"
           mkdir -p "$BUNDLE_DIR"
           cp kernel_workspace/common/out/arch/arm64/boot/kernel "$BUNDLE_DIR/kernel"
+          cp kernel_workspace/common/
 
       - name: 📥 Download manager APK
         if: ${{ env.KSU_TYPE != 'N/A' }}
