@@ -205,5 +205,5 @@ jobs:
       enable_Adios: ${{ inputs.enable_Adios }}
       enable_susfs: ${{ inputs.enable_susfs }}
       enable_susfs_dev: ${{ inputs.enable_susfs_dev }}
-      enable_nomount: ${{ inputs.enable_zeromount }}
+      enable_nomount: ${{ inputs.enable_nomount }}
     secrets: inherit
