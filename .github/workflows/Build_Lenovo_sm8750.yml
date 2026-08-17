@@ -128,9 +128,9 @@ jobs:
       ENABLE_NETFILTER: ${{ inputs.enable_netfilter }}
       ENABLE_BBR_ECN: ${{ inputs.enable_bbr_ecn }}
       ENABLE_UNICODE_BYPASS: ${{ inputs.enable_unicode_bypass }}
-      ENABLE_SUSFS: ${{ inputs.enable_susfs && inputs.ksu_type != 'YukiSU' }}
+      ENABLE_SUSFS: ${{ inputs.enable_susfs }}
       # ENABLE_SIGNED: ${{ inputs.enable_signed }}
-      ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev && inputs.ksu_type != 'YukiSU'}}
+      ENABLE_SUSFS_DEV: ${{ inputs.enable_susfs_dev }}
     steps:
       - uses: actions/checkout@v6
         with:
