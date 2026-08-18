@@ -885,7 +885,7 @@ jobs:
         if: ${{ (env.ENABLE_NOMOUNT == 'true' )}}
         run: |
           cd kernel_workspace/common
-          curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
+          curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -s experimental/hookless
       - name: 🔧 Set gki_defconfig
         run: |
           cd kernel_workspace
